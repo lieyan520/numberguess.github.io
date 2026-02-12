@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>猜数字</title>
+    <style>
+        /* ------------------------------------------------------------
+            现代游戏风格 · 无圆角 · 无表格阴影 · 战报左右对齐
+        ------------------------------------------------------------ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            border-radius: 0 !important;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 50%, #0c1a1f, #030607);
+            font-family: 'Inter', 'Courier New', 'SF Mono', 'Fira Code', monospace;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+
+        #app {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: rgba(10, 20, 24, 0.75);
+            backdrop-filter: blur(4px);
+            color: #b7f0b1;
+            border: 3px solid #2b8c5e;
+            box-shadow: 0 0 25px rgba(0, 255, 100, 0.2);
+            overflow: hidden;
+        }
+
+        .app-layout {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* ===== 页眉 — 碳纤维质感 ===== */
+        .header-row {
+            flex: 0 0 90px;
+            border-bottom: 3px solid #2b8c5e;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0e1b1f;
+            background-image: linear-gradient(145deg, #0f1e22 0%, #0a1518 100%);
+            position: relative;
+            z-index: 100;
+            box-shadow: 0 6px 0 rgba(0, 30, 20, 0.7);
+        }
+
+        .game-title {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #aaf0b0;
+            text-shadow: 0 0 8px #1f9a5a, 0 0 2px #8fec9f;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            position: relative;
+            height: 100%;
+        }
+
+        /* ----- 难度按钮 ----- */
+        .difficulty-display {
+            font-size: 24px;
+            padding: 8px 28px;
+            background: #0d181c;
+            color: #baf0b6;
+            border: 2.5px solid #2a9d6e;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            position: relative;
+            white-space: nowrap;
+            height: 58px;
+            font-weight: 600;
+            transition: all 0.06s ease-in;
+            box-shadow: inset 0 -4px 0 #0f3a2a, inset 0 2px 0 #63d6a1;
+        }
+        .difficulty-display:hover {
+            background: #15302b;
+            border-color: #44d68a;
+            color: #ebffed;
+            box-shadow: inset 0 -3px 0 #1f5e45, inset 0 3px 0 #a5f0c5;
+        }
+
+        /* 难度菜单 */
+        .difficulty-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: #0e1a1c;
+            border: 2.5px solid #1e8b5c;
+            width: auto;
+            min-width: 100%;
+            z-index: 200;
+            margin-top: 6px;
+            white-space: nowrap;
+            box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+        }
+        .difficulty-menu-item {
+            padding: 16px 32px;
+            font-size: 22px;
+            color: #c6f7c0;
+            border-bottom: 2px solid #1c6b4a;
+            cursor: pointer;
+            white-space: nowrap;
+            font-weight: 500;
+            background: #0f1f20;
+            transition: 0.04s linear;
+        }
+        .difficulty-menu-item:last-child {
+            border-bottom: none;
+        }
+        .difficulty-menu-item:hover {
+            background: #1f4943;
+            color: white;
+            border-left: 8px solid #4ad68e;
+        }
+
+        /* ----- 按钮风格 ----- */
+        .method-toggle, .reset-table-btn {
+            font-size: 24px;
+            padding: 8px 28px;
+            background: #0d181c;
+            color: #baf0b6;
+            border: 2.5px solid #2a9d6e;
+            cursor: pointer;
+            white-space: nowrap;
+            height: 58px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.06s;
+            box-shadow: inset 0 -4px 0 #0f3a2a, inset 0 2px 0 #63d6a1;
+        }
+        .method-toggle:hover, .reset-table-btn:hover {
+            background: #15302b;
+            border-color: #44d68a;
+            color: #ebffed;
+            box-shadow: inset 0 -3px 0 #1f5e45, inset 0 3px 0 #a5f0c5;
+        }
+
+        /* ===== 三列核心 — 玻璃半透硬核 ===== */
+        .main-three-columns {
+            flex: 1 1 0;
+            display: flex;
+            flex-direction: row;
+            min-height: 0;
+            width: 100%;
+            overflow: hidden;
+            padding: 28px;
+            gap: 28px;
+            background: radial-gradient(ellipse at top, #0d1a1c, #091012);
+        }
+
+        /* 三块面板 */
+        .left-play-area, 
+        .middle-history-area, 
+        .right-table-area {
+            flex: 1 1 0;
+            display: flex;
+            flex-direction: column;
+            border: 3px solid #1b6e4c;
+            background: #0c181c;
+            background: linear-gradient(145deg, #0d1c1e, #0a1518);
+            overflow: hidden;
+            min-width: 0;
+            box-shadow: 10px 10px 0 rgba(0, 20, 10, 0.6);
+        }
+
+        /* ---------- 左侧 主控制区 ---------- */
+        .left-inner {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            padding: 30px 20px;
+            gap: 24px;
+        }
+
+        .left-inner > * {
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            width: 100%;
+        }
+
+        label {
+            font-size: 24px;
+            font-weight: 600;
+            white-space: nowrap;
+            color: #b2edb2;
+            text-shadow: 0 0 4px #208a4a;
+        }
+
+        .guess-input {
+            flex: 1;
+            min-width: 0;
+            max-width: 240px;
+            font-size: 24px;
+            padding: 12px 16px;
+            background: #0a171b;
+            color: #dcffe7;
+            border: 3px solid #2d8f62;
+            font-weight: 500;
+            height: 60px;
+            box-shadow: inset 0 0 10px #030e0c, inset 0 2px 0 #50ba85;
+        }
+        .guess-input::placeholder {
+            color: #7bcba1;
+            opacity: 0.9;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        .guess-input:focus {
+            background: #0d2224;
+            border-color: #52d494;
+            outline: none;
+            box-shadow: inset 0 0 12px #0a302a, 0 0 12px #2dae74;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            width: 100%;
+        }
+        .button-group button {
+            flex: 1;
+            max-width: 140px;
+            font-size: 24px;
+            padding: 12px 0;
+            background: #10292a;
+            color: #d3ffd0;
+            border: 2.5px solid #2aad70;
+            cursor: pointer;
+            height: 60px;
+            font-weight: 650;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            transition: 0.06s;
+            box-shadow: inset 0 -5px 0 #10412e, inset 0 2px 0 #92e7b5;
+        }
+        .button-group button:hover {
+            background: #1a463e;
+            border-color: #4ce69a;
+            box-shadow: inset 0 -4px 0 #1d6346, inset 0 4px 0 #c2ffd6;
+        }
+
+        .error-message, .win-message {
+            width: 100%;
+            padding: 18px 12px;
+            margin: 0;
+            font-size: 22px;
+            line-height: 1.4;
+            text-align: center;
+            font-weight: 600;
+            border-width: 3px;
+            border-style: solid;
+        }
+        .error-message {
+            color: #ffe1ac;
+            background: #271c0a;
+            border-color: #dc8b2b;
+            box-shadow: inset 0 0 20px #341f06, 0 6px 0 #5e3e15;
+        }
+        .win-message {
+            color: #fcfcaa;
+            background: #0d2a1c;
+            border-color: #f0e65c;
+            box-shadow: inset 0 0 20px #1d4624, 0 6px 0 #698b2a;
+        }
+
+        .howto-btn {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+            font-size: 24px;
+            padding: 12px;
+            background: #0f2a26;
+            color: #c6f7bc;
+            border: 2.5px solid #289f6c;
+            cursor: pointer;
+            height: 60px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.06s;
+            box-shadow: inset 0 -4px 0 #0a3d2c;
+        }
+        .howto-btn:hover {
+            background: #1f4a40;
+            border-color: #54d692;
+        }
+
+        .tutorial-panel {
+            width: 100%;
+            max-width: 360px;
+            margin: 0 auto;
+            border: 3px solid #2d9c6e;
+            padding: 24px 20px;
+            background: #0b1d1c;
+            background: linear-gradient(165deg, #0b1e1e, #0c1b1b);
+            font-size: 20px;
+            line-height: 1.9;
+            color: #d4fad4;
+            box-shadow: inset 0 0 20px #051313, 8px 8px 0 #0e322a;
+        }
+        .tutorial-panel h3 {
+            font-size: 26px;
+            margin-bottom: 18px;
+            border-bottom: 3px solid #31b87b;
+            padding-bottom: 10px;
+            color: #dbffc5;
+            text-shadow: 0 0 6px #208e4a;
+        }
+
+        /* ===== 历史区域 — 战报左右布局（核心修改）===== */
+        .middle-history-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+        }
+
+        .history-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 380px;
+            height: 100%;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            font-size: 24px;
+            font-weight: 600;
+            padding-bottom: 12px;
+            border-bottom: 4px solid #1f8e5a;
+            color: #c6f7c6;
+            text-shadow: 0 0 5px #197a4b;
+        }
+
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 22px;
+            line-height: 1.9;
+            width: 100%;
+            padding-right: 6px;
+            scrollbar-width: thin;
+            scrollbar-color: #28975e #0a1a1a;
+        }
+        .history-list::-webkit-scrollbar {
+            width: 8px;
+            background: #0e1f1f;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: #218353;
+            border: none;
+        }
+
+        /* 战报条目 — 左右布局：数字在左，结果在右 */
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px dashed #206e4c;
+            padding: 14px 0;
+            color: #d0ffcf;
+            font-weight: 450;
+        }
+        
+        .history-guess {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #c4ffc0;
+            text-shadow: 0 0 4px #1a9e5c;
+        }
+        
+        .history-result-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .history-result {
+            color: #a8f0b5;
+            font-weight: 700;
+            background: #10332b;
+            padding: 6px 18px;
+            border: 2px solid #2d9e60;
+            font-size: 24px;
+        }
+        
+        .history-trophy {
+            color: #ffdb7e;
+            font-size: 28px;
+            filter: drop-shadow(0 0 8px gold);
+        }
+
+        .empty-history {
+            color: #73b388;
+            font-size: 24px;
+            padding: 32px 0;
+            text-align: center;
+            width: 100%;
+            font-weight: 500;
+            text-shadow: 0 0 6px #0a4526;
+        }
+
+        /* ===== 右侧表格 — 完全移除阴影，保留渐变+发光 ===== */
+        .right-table-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+        }
+
+        .right-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            max-width: 550px;
+        }
+
+        .table-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* 表格 — 无阴影，仅保留渐变与发光 */
+        .grid-table {
+            border-collapse: collapse;
+            border: 4px solid #27a86c;
+            background: #0b1c1c;
+            table-layout: fixed;
+            width: auto;
+            height: auto;
+            margin: 0 auto;
+            /* 已移除所有阴影 box-shadow */
+        }
+        .grid-table td {
+            border: 2px solid #1f8e5a;
+            width: 58px;
+            height: 58px;
+            text-align: center;
+            vertical-align: middle;
+            font-size: 26px;
+            font-weight: 700;
+            color: #d0ffc0;
+            background-color: #0e1f20;
+            cursor: pointer;
+            transition: all 0.04s linear;
+            text-shadow: 0 0 6px #0e8a4a;
+            box-shadow: inset 0 0 12px #041010; /* 内发光保留，外阴影已移除 */
+        }
+        .grid-table td.green {
+            background-color: #1a9a5c;
+            background: radial-gradient(#37ce7c, #0f874a);
+            color: black;
+            text-shadow: 0 0 10px white;
+            border-color: #a0f7b0;
+            box-shadow: inset 0 0 24px #befac4; /* 内发光保留 */
+        }
+        .grid-table td.red {
+            background-color: #a83232;
+            background: radial-gradient(#d45c5c, #972828);
+            color: white;
+            text-shadow: 0 0 10px #ffbaba;
+            border-color: #ffa07a;
+            box-shadow: inset 0 0 24px #ffbcbc; /* 内发光保留 */
+        }
+        .grid-table td:hover {
+            background-color: #1f5242;
+            border-color: #62e6a6;
+            transform: scale(0.97);
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="app-layout">
+            <!-- 页眉 -->
+            <div class="header-row">
+                <div class="game-title">◈ 猜数字 ◈</div>
+                <div class="header-controls">
+                    <!-- 难度下拉触发器 -->
+                    <div class="difficulty-display" @click="toggleDifficultyMenu">
+                        <span>⚙ 难度 {{ currentModeName }}</span>
+                        <span style="font-size:22px;">▼</span>
+                    </div>
+                    <!-- 难度菜单 -->
+                    <div v-if="showDifficultyMenu" class="difficulty-menu">
+                        <div v-for="level in difficultyLevels" :key="level" 
+                             class="difficulty-menu-item"
+                             @click="selectDifficulty(level)">
+                            {{ difficultyNames[level] }} ({{ level }}位 · 1~{{ level }})
+                        </div>
+                    </div>
+                    
+                    <button class="method-toggle" @click="toggleMethod">
+                        🎯 方法: {{ currentMethod }}
+                    </button>
+                    <button class="reset-table-btn" @click="confirmResetTable">
+                        ⟲ 重置表格
+                    </button>
+                </div>
+            </div>
+
+            <!-- 三列等宽·全居中 -->
+            <div class="main-three-columns">
+                <!-- 左侧 游戏区 -->
+                <div class="left-play-area">
+                    <div class="left-inner">
+                        <div class="row">
+                            <label></label>
+                            <input 
+                                type="text" 
+                                v-model="userGuess" 
+                                :maxlength="digitLength" 
+                                placeholder="请输入数字"
+                                @keyup.enter="submitGuess"
+                                :disabled="gameWon"
+                                class="guess-input"
+                            >
+                        </div>
+                        
+                        <div class="button-group">
+                            <button @click="submitGuess" :disabled="gameWon">⚡ 猜</button>
+                            <button @click="resetGame">⟲ 重置</button>
+                        </div>
+
+                        <div v-if="errorMsg" class="error-message">
+                            ⚠️ {{ errorMsg }}
+                        </div>
+                        <div v-if="gameWon" class="win-message">
+                            🏆 {{ currentModeName }} 胜利 🏆
+                        </div>
+                        
+                        <button class="howto-btn" @click="toggleTutorial">
+                            📘 如何玩
+                        </button>
+                        
+                        <div v-if="showTutorial" class="tutorial-panel">
+                            <h3>📌 战术手册</h3>
+                            <p>• 输入数字猜测</p>
+                            <p>• 系统会输出猜对了几个数字</p>
+                            <p>• 点击难度可切换难度</p>
+                            <p></p>
+                            <p></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中间 历史记录 — 战报左右布局 -->
+                <div class="middle-history-area">
+                    <div class="history-container">
+                        <div class="history-header">
+                            <span>📋 战报</span>
+                            <span> {{ historyList.length }} 次</span>
+                        </div>
+                        <div class="history-list">
+                            <div v-if="historyList.length === 0" class="empty-history">
+                                ⌛ 无记录，开始首猜
+                            </div>
+                            <div v-for="(item, idx) in historyList" :key="idx" class="history-item">
+                                <!-- 左侧：猜测数字 -->
+                                <span class="history-guess">{{ item.guess }}</span>
+                                <!-- 右侧：猜对个数 + 奖杯 -->
+                                <div class="history-result-wrapper">
+                                    <span class="history-result">{{ item.correct }}/{{ digitLength }}</span>
+                                    <span v-if="item.correct === digitLength" class="history-trophy">🏆</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧 · 动态NxN表格 — 无阴影，保留渐变+发光 -->
+                <div class="right-table-area">
+                    <div class="right-content">
+                        <div class="table-container">
+                            <table class="grid-table">
+                                <tr v-for="row in digitLength" :key="'row'+row">
+                                    <td v-for="col in digitLength" :key="'col'+col"
+                                        :class="{
+                                            green: isCellGreen(row, col) && methodState === '可能',
+                                            red: isCellRed(row, col) && methodState === '排除'
+                                        }"
+                                        @click="toggleCell(row, col)">
+                                        {{ row }}
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp, ref, computed, watch } = Vue;
+
+        const app = createApp({
+            setup() {
+                // 难度词条
+                const difficultyLevels = [3, 4, 5, 6, 7, 8, 9];
+                const difficultyNames = {
+                    3: '练习', 4: '简单', 5: '普通',
+                    6: '困难', 7: '地狱', 8: '炼狱', 9: '崩坏'
+                };
+                
+                const selectedMode = ref(5);
+                const secretDigits = ref([]);
+                const userGuess = ref('');
+                const gameWon = ref(false);
+                const errorMsg = ref('');
+                const historyList = ref([]);
+                const showTutorial = ref(false);
+                const showDifficultyMenu = ref(false);
+
+                const digitLength = computed(() => selectedMode.value);
+                const currentModeName = computed(() => difficultyNames[selectedMode.value]);
+
+                function toggleDifficultyMenu() {
+                    showDifficultyMenu.value = !showDifficultyMenu.value;
+                }
+                
+                function selectDifficulty(level) {
+                    selectedMode.value = level;
+                    showDifficultyMenu.value = false;
+                }
+
+                function generateSecret(length) {
+                    const arr = [];
+                    for (let i = 1; i <= length; i++) arr.push(i);
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                }
+
+                const redCells = ref(new Set());
+                const greenCells = ref(new Set());
+
+                function resetTableToWhite() {
+                    redCells.value = new Set();
+                    greenCells.value = new Set();
+                }
+
+                function resetGame() {
+                    secretDigits.value = generateSecret(digitLength.value);
+                    gameWon.value = false;
+                    userGuess.value = '';
+                    errorMsg.value = '';
+                    historyList.value = [];
+                    resetTableToWhite();
+                    showTutorial.value = false;
+                }
+
+                secretDigits.value = generateSecret(5);
+
+                function validateGuess(guessStr) {
+                    const len = digitLength.value;
+                    if (guessStr.length !== len) return `必须输入 ${len} 位数字`;
+                    if (!/^\d+$/.test(guessStr)) return '只能包含数字';
+                    const set = new Set(guessStr);
+                    if (set.size !== guessStr.length) return '猜测数字不能重复';
+                    const maxVal = len;
+                    for (let ch of guessStr) {
+                        const num = parseInt(ch,10);
+                        if (num < 1 || num > maxVal) return `每位必须是 1~${maxVal}`;
+                    }
+                    const already = historyList.value.some(item => item.guess === guessStr);
+                    if (already) return `“${guessStr}” 已经猜过`;
+                    return '';
+                }
+
+                function countCorrectPositions(guessArr) {
+                    let correct = 0;
+                    const secret = secretDigits.value;
+                    for (let i = 0; i < secret.length; i++) {
+                        if (parseInt(guessArr[i], 10) === secret[i]) correct++;
+                    }
+                    return correct;
+                }
+
+                function submitGuess() {
+                    if (gameWon.value) {
+                        errorMsg.value = '游戏已胜利，点击【重置】';
+                        return;
+                    }
+                    const guessStr = userGuess.value.trim();
+                    const validationError = validateGuess(guessStr);
+                    if (validationError) {
+                        errorMsg.value = validationError;
+                        return;
+                    }
+                    errorMsg.value = '';
+                    const guessArray = guessStr.split('');
+                    const correctPositions = countCorrectPositions(guessArray);
+                    historyList.value.push({ guess: guessStr, correct: correctPositions });
+                    if (correctPositions === digitLength.value) gameWon.value = true;
+                    userGuess.value = '';
+                }
+
+                watch(selectedMode, () => {
+                    resetGame();
+                });
+
+                watch(showDifficultyMenu, (val) => {
+                    if (val) {
+                        setTimeout(() => {
+                            const closeMenu = (e) => {
+                                if (!e.target.closest('.difficulty-display') && !e.target.closest('.difficulty-menu')) {
+                                    showDifficultyMenu.value = false;
+                                    document.removeEventListener('click', closeMenu);
+                                }
+                            };
+                            document.addEventListener('click', closeMenu);
+                        }, 0);
+                    }
+                });
+
+                const methodState = ref('排除');
+                function toggleMethod() {
+                    methodState.value = methodState.value === '排除' ? '可能' : '排除';
+                }
+                const currentMethod = computed(() => methodState.value);
+
+                function isCellGreen(row, col) {
+                    return greenCells.value.has(`${row},${col}`);
+                }
+                function isCellRed(row, col) {
+                    return redCells.value.has(`${row},${col}`);
+                }
+
+                function toggleCell(row, col) {
+                    const key = `${row},${col}`;
+                    if (methodState.value === '排除') {
+                        const newRed = new Set(redCells.value);
+                        if (newRed.has(key)) newRed.delete(key);
+                        else newRed.add(key);
+                        redCells.value = newRed;
+                    } else {
+                        const newGreen = new Set(greenCells.value);
+                        if (newGreen.has(key)) newGreen.delete(key);
+                        else newGreen.add(key);
+                        greenCells.value = newGreen;
+                    }
+                }
+
+                function confirmResetTable() {
+                    if (confirm('是否重置表格？')) {
+                        resetTableToWhite();
+                    }
+                }
+
+                function toggleTutorial() {
+                    showTutorial.value = !showTutorial.value;
+                }
+
+                return {
+                    difficultyLevels,
+                    difficultyNames,
+                    selectedMode,
+                    userGuess,
+                    gameWon,
+                    errorMsg,
+                    historyList,
+                    digitLength,
+                    currentModeName,
+                    showDifficultyMenu,
+                    toggleDifficultyMenu,
+                    selectDifficulty,
+                    submitGuess,
+                    resetGame,
+                    methodState,
+                    currentMethod,
+                    toggleMethod,
+                    redCells,
+                    greenCells,
+                    isCellGreen,
+                    isCellRed,
+                    toggleCell,
+                    confirmResetTable,
+                    showTutorial,
+                    toggleTutorial,
+                };
+            }
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>
