@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>猜数字</title>
+    <title>猜数字 · 炼狱密火</title>
     <style>
         /* ------------------------------------------------------------
-            现代游戏风格 · 无圆角 · 无表格阴影 · 战报左右对齐
+            现代游戏风格 · 无圆角 · 无表格阴影 · 战报左右
+            秘密模式：深红主题 + 跳动乱码
         ------------------------------------------------------------ */
         * {
             margin: 0;
@@ -22,6 +23,84 @@
             font-family: 'Inter', 'Courier New', 'SF Mono', 'Fira Code', monospace;
             overflow: hidden;
             letter-spacing: 0.3px;
+            transition: background 0.2s;
+        }
+
+        /* 秘密模式：深红覆盖 */
+        html.secret-mode, .secret-mode body {
+            background: radial-gradient(circle at 50% 50%, #2a0c0c, #1a0303) !important;
+        }
+        .secret-mode #app {
+            border-color: #8b2b2b !important;
+            box-shadow: 0 0 25px rgba(255, 50, 50, 0.3) !important;
+            background: rgba(30, 10, 12, 0.85) !important;
+        }
+        .secret-mode .header-row {
+            border-bottom-color: #8b3a3a !important;
+            background: #1e0e10 !important;
+            background-image: linear-gradient(145deg, #201214, #150a0b) !important;
+            box-shadow: 0 6px 0 #3a1e1e !important;
+        }
+        .secret-mode .game-title {
+            color: #ffb3b3 !important;
+            text-shadow: 0 0 8px #c44f4f, 0 0 2px #ff8a8a !important;
+        }
+        .secret-mode .difficulty-display,
+        .secret-mode .method-toggle,
+        .secret-mode .reset-table-btn {
+            border-color: #b55454 !important;
+            color: #ffc9c9 !important;
+            background: #221213 !important;
+            box-shadow: inset 0 -4px 0 #4f2525, inset 0 2px 0 #d67a7a !important;
+        }
+        .secret-mode .left-play-area,
+        .secret-mode .middle-history-area,
+        .secret-mode .right-table-area {
+            border-color: #8b4040 !important;
+            background: #1f1113 !important;
+            background: linear-gradient(145deg, #201516, #1b0e0f) !important;
+            box-shadow: 10px 10px 0 #2e1919 !important;
+        }
+        .secret-mode .grid-table {
+            border-color: #b15858 !important;
+        }
+        .secret-mode .grid-table td {
+            border-color: #a14b4b !important;
+            color: #ffd8d8 !important;
+            text-shadow: 0 0 6px #d64a4a !important;
+            box-shadow: inset 0 0 12px #2a0f0f !important;
+        }
+
+        /* 跳动乱码动画 */
+        @keyframes glitch {
+            0% { transform: translate(0, 0) skew(0deg); opacity: 1; }
+            20% { transform: translate(-2px, 1px) skew(2deg); opacity: 0.9; }
+            40% { transform: translate(2px, -1px) skew(-2deg); opacity: 0.95; }
+            60% { transform: translate(-1px, 2px) skew(1deg); opacity: 0.9; }
+            80% { transform: translate(1px, -2px) skew(-1deg); opacity: 0.95; }
+            100% { transform: translate(0, 0) skew(0deg); opacity: 1; }
+        }
+        .secret-mode .glitch-text {
+            animation: glitch 0.3s infinite !important;
+            display: inline-block;
+        }
+        .secret-mode .game-title,
+        .secret-mode .difficulty-display span,
+        .secret-mode .method-toggle,
+        .secret-mode .reset-table-btn,
+        .secret-mode label,
+        .secret-mode .history-header span,
+        .secret-mode .history-guess,
+        .secret-mode .history-result,
+        .secret-mode .grid-table td,
+        .secret-mode .error-message,
+        .secret-mode .win-message,
+        .secret-mode .howto-btn,
+        .secret-mode .tutorial-panel,
+        .secret-mode .tutorial-panel h3,
+        .secret-mode .tutorial-panel p,
+        .secret-mode .empty-history {
+            animation: glitch 0.25s infinite !important;
         }
 
         #app {
@@ -35,6 +114,7 @@
             border: 3px solid #2b8c5e;
             box-shadow: 0 0 25px rgba(0, 255, 100, 0.2);
             overflow: hidden;
+            transition: all 0.2s;
         }
 
         .app-layout {
@@ -45,7 +125,7 @@
             overflow: hidden;
         }
 
-        /* ===== 页眉 — 碳纤维质感 ===== */
+        /* ===== 页眉 ===== */
         .header-row {
             flex: 0 0 90px;
             border-bottom: 3px solid #2b8c5e;
@@ -80,7 +160,6 @@
             height: 100%;
         }
 
-        /* ----- 难度按钮 ----- */
         .difficulty-display {
             font-size: 24px;
             padding: 8px 28px;
@@ -105,7 +184,6 @@
             box-shadow: inset 0 -3px 0 #1f5e45, inset 0 3px 0 #a5f0c5;
         }
 
-        /* 难度菜单 */
         .difficulty-menu {
             position: absolute;
             top: 100%;
@@ -139,7 +217,6 @@
             border-left: 8px solid #4ad68e;
         }
 
-        /* ----- 按钮风格 ----- */
         .method-toggle, .reset-table-btn {
             font-size: 24px;
             padding: 8px 28px;
@@ -163,7 +240,31 @@
             box-shadow: inset 0 -3px 0 #1f5e45, inset 0 3px 0 #a5f0c5;
         }
 
-        /* ===== 三列核心 — 玻璃半透硬核 ===== */
+        /* 秘密模式下禁用按钮样式 */
+        .secret-mode .method-toggle:not(.guess-btn-only),
+        .secret-mode .reset-table-btn,
+        .secret-mode .howto-btn,
+        .secret-mode .difficulty-display,
+        .secret-mode .button-group button:not(.guess-btn) {
+            opacity: 0.5 !important;
+            pointer-events: none !important;
+            cursor: not-allowed !important;
+        }
+        
+        /* 猜测按钮始终保持可用 */
+        .guess-btn, .button-group button:first-child {
+            position: relative;
+            z-index: 999;
+        }
+        .secret-mode .guess-btn, 
+        .secret-mode .button-group button:first-child {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            border-color: #ff7e7e !important;
+            background: #3a1e1e !important;
+        }
+
+        /* ===== 三列核心 ===== */
         .main-three-columns {
             flex: 1 1 0;
             display: flex;
@@ -176,7 +277,6 @@
             background: radial-gradient(ellipse at top, #0d1a1c, #091012);
         }
 
-        /* 三块面板 */
         .left-play-area, 
         .middle-history-area, 
         .right-table-area {
@@ -191,7 +291,7 @@
             box-shadow: 10px 10px 0 rgba(0, 20, 10, 0.6);
         }
 
-        /* ---------- 左侧 主控制区 ---------- */
+        /* 左侧主控制区 */
         .left-inner {
             display: flex;
             flex-direction: column;
@@ -349,7 +449,7 @@
             text-shadow: 0 0 6px #208e4a;
         }
 
-        /* ===== 历史区域 — 战报左右布局（核心修改）===== */
+        /* 历史区域 — 战报左右布局 */
         .middle-history-area {
             display: flex;
             flex-direction: column;
@@ -397,7 +497,6 @@
             border: none;
         }
 
-        /* 战报条目 — 左右布局：数字在左，结果在右 */
         .history-item {
             display: flex;
             align-items: center;
@@ -447,7 +546,7 @@
             text-shadow: 0 0 6px #0a4526;
         }
 
-        /* ===== 右侧表格 — 完全移除阴影，保留渐变+发光 ===== */
+        /* 右侧表格 */
         .right-table-area {
             display: flex;
             flex-direction: column;
@@ -474,7 +573,6 @@
             height: 100%;
         }
 
-        /* 表格 — 无阴影，仅保留渐变与发光 */
         .grid-table {
             border-collapse: collapse;
             border: 4px solid #27a86c;
@@ -483,7 +581,6 @@
             width: auto;
             height: auto;
             margin: 0 auto;
-            /* 已移除所有阴影 box-shadow */
         }
         .grid-table td {
             border: 2px solid #1f8e5a;
@@ -498,7 +595,7 @@
             cursor: pointer;
             transition: all 0.04s linear;
             text-shadow: 0 0 6px #0e8a4a;
-            box-shadow: inset 0 0 12px #041010; /* 内发光保留，外阴影已移除 */
+            box-shadow: inset 0 0 12px #041010;
         }
         .grid-table td.green {
             background-color: #1a9a5c;
@@ -506,7 +603,7 @@
             color: black;
             text-shadow: 0 0 10px white;
             border-color: #a0f7b0;
-            box-shadow: inset 0 0 24px #befac4; /* 内发光保留 */
+            box-shadow: inset 0 0 24px #befac4;
         }
         .grid-table td.red {
             background-color: #a83232;
@@ -514,12 +611,19 @@
             color: white;
             text-shadow: 0 0 10px #ffbaba;
             border-color: #ffa07a;
-            box-shadow: inset 0 0 24px #ffbcbc; /* 内发光保留 */
+            box-shadow: inset 0 0 24px #ffbcbc;
         }
         .grid-table td:hover {
             background-color: #1f5242;
             border-color: #62e6a6;
             transform: scale(0.97);
+        }
+
+        /* 秘密模式表格特殊文字 */
+        .secret-grid-text {
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+            font-weight: 900;
         }
     </style>
 </head>
@@ -528,14 +632,12 @@
         <div class="app-layout">
             <!-- 页眉 -->
             <div class="header-row">
-                <div class="game-title">◈ 猜数字 ◈</div>
+                <div class="game-title" :class="{ 'glitch-text': secretMode }">◈ 猜数字 ◈</div>
                 <div class="header-controls">
-                    <!-- 难度下拉触发器 -->
-                    <div class="difficulty-display" @click="toggleDifficultyMenu">
-                        <span>⚙ 难度 {{ currentModeName }}</span>
+                    <div class="difficulty-display" @click="toggleDifficultyMenu" :class="{ 'glitch-text': secretMode }">
+                        <span>⚙️ 难度 {{ currentModeName }}</span>
                         <span style="font-size:22px;">▼</span>
                     </div>
-                    <!-- 难度菜单 -->
                     <div v-if="showDifficultyMenu" class="difficulty-menu">
                         <div v-for="level in difficultyLevels" :key="level" 
                              class="difficulty-menu-item"
@@ -544,11 +646,11 @@
                         </div>
                     </div>
                     
-                    <button class="method-toggle" @click="toggleMethod">
+                    <button class="method-toggle" @click="toggleMethod" :class="{ 'glitch-text': secretMode }">
                         🎯 方法: {{ currentMethod }}
                     </button>
-                    <button class="reset-table-btn" @click="confirmResetTable">
-                        ⟲ 重置表格
+                    <button class="reset-table-btn" @click="confirmResetTable" :class="{ 'glitch-text': secretMode }">
+                        🔃 重置表格
                     </button>
                 </div>
             </div>
@@ -559,41 +661,39 @@
                 <div class="left-play-area">
                     <div class="left-inner">
                         <div class="row">
-                            <label></label>
+                            <label :class="{ 'glitch-text': secretMode }"></label>
                             <input 
                                 type="text" 
                                 v-model="userGuess" 
-                                :maxlength="digitLength" 
-                                placeholder="请输入数字"
+                                :maxlength="secretMode ? 9 : digitLength" 
+                                :placeholder="secretMode ? '请输入数字' : '请输入数字'"
                                 @keyup.enter="submitGuess"
-                                :disabled="gameWon"
+                                :disabled="gameWon && !secretMode"
                                 class="guess-input"
                             >
                         </div>
                         
                         <div class="button-group">
-                            <button @click="submitGuess" :disabled="gameWon">⚡ 猜</button>
-                            <button @click="resetGame">⟲ 重置</button>
+                            <button @click="submitGuess" :disabled="gameWon && !secretMode" class="guess-btn" :class="{ 'glitch-text': secretMode }">🤔 猜测</button>
+                            <button @click="resetGame" :disabled="secretMode" :class="{ 'glitch-text': secretMode }">🔃 重置</button>
                         </div>
 
-                        <div v-if="errorMsg" class="error-message">
+                        <div v-if="errorMsg" class="error-message" :class="{ 'glitch-text': secretMode }">
                             ⚠️ {{ errorMsg }}
                         </div>
-                        <div v-if="gameWon" class="win-message">
+                        <div v-if="gameWon" class="win-message" :class="{ 'glitch-text': secretMode }">
                             🏆 {{ currentModeName }} 胜利 🏆
                         </div>
                         
-                        <button class="howto-btn" @click="toggleTutorial">
+                        <button class="howto-btn" @click="toggleTutorial" :disabled="secretMode" :class="{ 'glitch-text': secretMode }">
                             📘 如何玩
                         </button>
                         
-                        <div v-if="showTutorial" class="tutorial-panel">
+                        <div v-if="showTutorial" class="tutorial-panel" :class="{ 'glitch-text': secretMode }">
                             <h3>📌 战术手册</h3>
                             <p>• 输入数字猜测</p>
                             <p>• 系统会输出猜对了几个数字</p>
                             <p>• 点击难度可切换难度</p>
-                            <p></p>
-                            <p></p>
                         </div>
                     </div>
                 </div>
@@ -602,39 +702,41 @@
                 <div class="middle-history-area">
                     <div class="history-container">
                         <div class="history-header">
-                            <span>📋 战报</span>
-                            <span> {{ historyList.length }} 次</span>
+                            <span :class="{ 'glitch-text': secretMode }">📋 战报</span>
+                            <span :class="{ 'glitch-text': secretMode }"> {{ historyList.length }} 次</span>
                         </div>
                         <div class="history-list">
-                            <div v-if="historyList.length === 0" class="empty-history">
+                            <div v-if="historyList.length === 0" class="empty-history" :class="{ 'glitch-text': secretMode }">
                                 ⌛ 无记录，开始首猜
                             </div>
                             <div v-for="(item, idx) in historyList" :key="idx" class="history-item">
-                                <!-- 左侧：猜测数字 -->
-                                <span class="history-guess">{{ item.guess }}</span>
-                                <!-- 右侧：猜对个数 + 奖杯 -->
+                                <span class="history-guess" :class="{ 'glitch-text': secretMode }">{{ item.guess }}</span>
                                 <div class="history-result-wrapper">
-                                    <span class="history-result">{{ item.correct }}/{{ digitLength }}</span>
-                                    <span v-if="item.correct === digitLength" class="history-trophy">🏆</span>
+                                    <span class="history-result" :class="{ 'glitch-text': secretMode }">{{ item.correct }}/{{ digitLength }}</span>
+                                    <span v-if="item.correct === digitLength" class="history-trophy" :class="{ 'glitch-text': secretMode }">🏆</span>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 右侧 · 动态NxN表格 — 无阴影，保留渐变+发光 -->
+                <!-- 右侧 · 动态NxN表格 — 秘密模式下显示9个随机字符 -->
                 <div class="right-table-area">
                     <div class="right-content">
                         <div class="table-container">
                             <table class="grid-table">
-                                <tr v-for="row in digitLength" :key="'row'+row">
-                                    <td v-for="col in digitLength" :key="'col'+col"
+                                <tr v-for="row in secretMode ? 3 : digitLength" :key="'row'+row">
+                                    <td v-for="col in secretMode ? 3 : digitLength" :key="'col'+col"
                                         :class="{
-                                            green: isCellGreen(row, col) && methodState === '可能',
-                                            red: isCellRed(row, col) && methodState === '排除'
+                                            green: !secretMode && isCellGreen(row, col) && methodState === '可能',
+                                            red: !secretMode && isCellRed(row, col) && methodState === '排除',
+                                            'glitch-text': secretMode,
+                                            'secret-grid-text': secretMode
                                         }"
-                                        @click="toggleCell(row, col)">
-                                        {{ row }}
+                                        @click="!secretMode && toggleCell(row, col)">
+                                        <!-- 秘密模式：显示9个随机字符之一，普通模式：显示行号 -->
+                                        <span v-if="secretMode">{{ secretGridChars[(row-1)*3 + (col-1)] }}</span>
+                                        <span v-else>{{ row }}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -667,15 +769,22 @@
                 const historyList = ref([]);
                 const showTutorial = ref(false);
                 const showDifficultyMenu = ref(false);
+                
+                // 秘密模式状态
+                const secretMode = ref(false);
+                // 9个随机字符
+                const secretGridChars = ref(Array(9).fill('0'));
 
                 const digitLength = computed(() => selectedMode.value);
                 const currentModeName = computed(() => difficultyNames[selectedMode.value]);
 
                 function toggleDifficultyMenu() {
+                    if (secretMode.value) return; // 秘密模式下禁用
                     showDifficultyMenu.value = !showDifficultyMenu.value;
                 }
                 
                 function selectDifficulty(level) {
+                    if (secretMode.value) return;
                     selectedMode.value = level;
                     showDifficultyMenu.value = false;
                 }
@@ -699,6 +808,7 @@
                 }
 
                 function resetGame() {
+                    if (secretMode.value) return; // 秘密模式下重置按钮已禁用，此处双重保险
                     secretDigits.value = generateSecret(digitLength.value);
                     gameWon.value = false;
                     userGuess.value = '';
@@ -710,7 +820,40 @@
 
                 secretDigits.value = generateSecret(5);
 
+                // 生成9个随机字符
+                function generateRandomChars() {
+                    const chars = '0123456789abcdefghijklmnopqrstuvwxyz';
+                    const result = [];
+                    for (let i = 0; i < 9; i++) {
+                        result.push(chars[Math.floor(Math.random() * chars.length)]);
+                    }
+                    return result;
+                }
+
+                // 触发秘密模式
+                function activateSecretMode() {
+                    if (selectedMode.value === 8 && !secretMode.value) { // 炼狱 = 8
+                        secretMode.value = true;
+                        // 添加到HTML根元素类
+                        document.documentElement.classList.add('secret-mode');
+                        // 生成9个随机字符
+                        secretGridChars.value = generateRandomChars();
+                        // 清空输入
+                        userGuess.value = '';
+                        errorMsg.value = '';
+                        // 清空历史，营造神秘感
+                        historyList.value = [];
+                    }
+                }
+
+                // 校验猜测（秘密模式下特殊处理）
                 function validateGuess(guessStr) {
+                    if (secretMode.value) {
+                        // 秘密模式下，任意输入皆可，无限制，但最长9位
+                        if (guessStr.length > 9) return '秘密模式下最多9位';
+                        return '';
+                    }
+                    
                     const len = digitLength.value;
                     if (guessStr.length !== len) return `必须输入 ${len} 位数字`;
                     if (!/^\d+$/.test(guessStr)) return '只能包含数字';
@@ -727,6 +870,10 @@
                 }
 
                 function countCorrectPositions(guessArr) {
+                    if (secretMode.value) {
+                        // 秘密模式下不计算正确位置，返回随机值0-9增加乱码感
+                        return Math.floor(Math.random() * 10);
+                    }
                     let correct = 0;
                     const secret = secretDigits.value;
                     for (let i = 0; i < secret.length; i++) {
@@ -736,30 +883,52 @@
                 }
 
                 function submitGuess() {
-                    if (gameWon.value) {
+                    if (gameWon.value && !secretMode.value) {
                         errorMsg.value = '游戏已胜利，点击【重置】';
                         return;
                     }
+                    
                     const guessStr = userGuess.value.trim();
+                    
+                    // 秘密模式触发条件：炼狱难度 + 输入"CyanBurn"
+                    if (selectedMode.value === 8 && guessStr === 'CyanBurn' && !secretMode.value) {
+                        activateSecretMode();
+                        return;
+                    }
+                    
                     const validationError = validateGuess(guessStr);
                     if (validationError) {
                         errorMsg.value = validationError;
                         return;
                     }
                     errorMsg.value = '';
-                    const guessArray = guessStr.split('');
-                    const correctPositions = countCorrectPositions(guessArray);
-                    historyList.value.push({ guess: guessStr, correct: correctPositions });
-                    if (correctPositions === digitLength.value) gameWon.value = true;
-                    userGuess.value = '';
+                    
+                    if (secretMode.value) {
+                        // 秘密模式下：将猜测加入历史，显示随机正确数，不清空输入（保留输入以便连续触发）
+                        const randomCorrect = Math.floor(Math.random() * 10);
+                        historyList.value.push({ 
+                            guess: guessStr, 
+                            correct: randomCorrect 
+                        });
+                        // 秘密模式下不清空输入，方便连续输入
+                        // 不检查胜利条件，永远不胜利，保持混乱
+                    } else {
+                        const guessArray = guessStr.split('');
+                        const correctPositions = countCorrectPositions(guessArray);
+                        historyList.value.push({ guess: guessStr, correct: correctPositions });
+                        if (correctPositions === digitLength.value) gameWon.value = true;
+                        userGuess.value = ''; // 普通模式清空
+                    }
                 }
 
                 watch(selectedMode, () => {
-                    resetGame();
+                    if (!secretMode.value) {
+                        resetGame();
+                    }
                 });
 
                 watch(showDifficultyMenu, (val) => {
-                    if (val) {
+                    if (val && !secretMode.value) {
                         setTimeout(() => {
                             const closeMenu = (e) => {
                                 if (!e.target.closest('.difficulty-display') && !e.target.closest('.difficulty-menu')) {
@@ -774,6 +943,7 @@
 
                 const methodState = ref('排除');
                 function toggleMethod() {
+                    if (secretMode.value) return;
                     methodState.value = methodState.value === '排除' ? '可能' : '排除';
                 }
                 const currentMethod = computed(() => methodState.value);
@@ -786,6 +956,7 @@
                 }
 
                 function toggleCell(row, col) {
+                    if (secretMode.value) return;
                     const key = `${row},${col}`;
                     if (methodState.value === '排除') {
                         const newRed = new Set(redCells.value);
@@ -801,12 +972,14 @@
                 }
 
                 function confirmResetTable() {
+                    if (secretMode.value) return;
                     if (confirm('是否重置表格？')) {
                         resetTableToWhite();
                     }
                 }
 
                 function toggleTutorial() {
+                    if (secretMode.value) return;
                     showTutorial.value = !showTutorial.value;
                 }
 
@@ -836,6 +1009,9 @@
                     confirmResetTable,
                     showTutorial,
                     toggleTutorial,
+                    // 秘密模式
+                    secretMode,
+                    secretGridChars,
                 };
             }
         });
